@@ -248,16 +248,26 @@ contains
        ! So we impose that: if (beta*dE is larger than a small qty) we sum up the contribution, else
        ! we do not include the contribution (because we are in the situation described above).
        ! For the real-axis case this problem is circumvented by the usual i*0+ = xi*eps
-       if(beta*dE > 1d-3)densChi_iv(iorb,jorb,0)=densChi_iv(iorb,jorb,0) + peso*2*(1d0-exp(-beta*dE))/dE 
+       if(abs(beta*dE) > 1d-3)then
+          densChi_iv(iorb,jorb,0)=densChi_iv(iorb,jorb,0) + peso*2d0/dE
+       else
+          densChi_iv(iorb,jorb,0)=densChi_iv(iorb,jorb,0) + peso*beta
+       endif
        do i=1,Lmats
-          densChi_iv(iorb,jorb,i)=densChi_iv(iorb,jorb,i) + peso*(1d0-exp(-beta*dE))*2d0*dE/(vm(i)**2+dE**2)
+          densChi_iv(iorb,jorb,i)=densChi_iv(iorb,jorb,i) + peso*2d0*dE/(vm(i)**2+dE**2)
        enddo
-       do i=0,Ltau
-          densChi_tau(iorb,jorb,i)=densChi_tau(iorb,jorb,i) + exp(-tau(i)*dE)*peso
-       enddo
+       if(abs(beta*dE) > 1d-3)then
+          do i=0,Ltau
+             densChi_tau(iorb,jorb,i)=densChi_tau(iorb,jorb,i) + peso*(exp(-tau(i)*dE) + exp((tau(i)-beta)*dE))/(1d0-exp(-beta*dE))
+          enddo
+       else
+          do i=0,Ltau
+             densChi_tau(iorb,jorb,i)=densChi_tau(iorb,jorb,i) + peso
+          enddo
+       endif
        do i=1,Lreal
           densChi_w(iorb,jorb,i)=densChi_w(iorb,jorb,i) - &
-               peso*(1d0-exp(-beta*dE))*(1d0/(dcmplx(vr(i),eps) - dE) - 1d0/(dcmplx(vr(i),eps) + dE))
+               peso*(1d0/(dcmplx(vr(i),eps) - dE) - 1d0/(dcmplx(vr(i),eps) + dE))
        enddo
     enddo
     !

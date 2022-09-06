@@ -43,12 +43,14 @@ contains
   !####################################################################
   !                 MAIN ROUTINES: BUILD/DELETE SECTOR
   !####################################################################
-  subroutine build_Hv_sector(isector,Hmat)
+  subroutine build_Hv_sector(isector,Hmat,Neigen)
     integer                         :: isector,SectorDim
-    real(8),dimension(:,:),optional :: Hmat   
+    real(8),dimension(:,:),optional :: Hmat
+    integer,optional                :: Neigen
     integer                         :: irank,ierr
     integer                         :: i,iup,idw
     integer                         :: j,jup,jdw
+    integer                         :: NewMpiSize
     !
     call build_sector(isector,Hsector)
     !
@@ -69,11 +71,16 @@ contains
     !>PREAMBLE: check that split of the DW is performed with the minimum #cpu: no idle cpus allowed (with zero elements)
 #ifdef _MPI
     if(MpiStatus)then
-       if(DimDw < MpiSize)then
-          if(MpiMaster.AND.ed_verbose>4)write(*,*)"Reducing N_cpu to DimDw:",DimDw,MpiSize-DimDw
-          allocate(MpiMembers(0:DimDw-1))
-          forall(irank=0:DimDw-1)MpiMembers(irank)=irank       
-          call Mpi_Group_Incl(MpiGroup_Global,DimDw,MpiMembers,MpiGroup,ierr)
+       if(present(Neigen))then
+          NewMpiSize = DimDw/(Neigen/(Dim/DimDw)+1)
+       else
+          NewMpiSize = DimDw
+       endif
+       if(NewMpiSize < MpiSize)then
+          if(MpiMaster.AND.ed_verbose>4)write(*,*)"Reducing N_cpu to NewMpiSize:",NewMpiSize,MpiSize-NewMpiSize
+          allocate(MpiMembers(0:NewMpiSize-1))
+          forall(irank=0:NewMpiSize-1)MpiMembers(irank)=irank       
+          call Mpi_Group_Incl(MpiGroup_Global,NewMpiSize,MpiMembers,MpiGroup,ierr)
           call Mpi_Comm_create(MpiComm_Global,MpiGroup,MpiComm,ierr)
           deallocate(MpiMembers)
           mpiAllThreads=.false.
@@ -93,6 +100,9 @@ contains
        if( MpiComm /= MPI_COMM_NULL )then
           MpiRank = Get_Rank_MPI(MpiComm)
           MpiSize = Get_Size_MPI(MpiComm)
+       else
+          MpiRank = DimDw+1
+          MpiSize = DimDw+1
        endif
     endif
 #endif

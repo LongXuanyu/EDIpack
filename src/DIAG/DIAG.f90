@@ -135,7 +135,7 @@ contains
        if(lanc_solve)then
           allocate(eig_values(Neigen)) ; eig_values=0d0 
           !
-          call build_Hv_sector(isector) !For MPI: MpiComm==MpiComm_Global .OR. MpiComm subset of MpiComm_Global
+          call build_Hv_sector(isector,Neigen=Neigen) !For MPI: MpiComm==MpiComm_Global .OR. MpiComm subset of MpiComm_Global
           !
           vecDim = vecDim_Hv_sector(isector)
           allocate(eig_basis(vecDim,Neigen))
